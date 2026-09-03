@@ -29,11 +29,66 @@ def get_book():
     print('\nBooks details:')
     response_treatment(resp)
     
+def insert_book():
+    while True:
+        print('\nWrite the book informations\n')
+        author = input("Author: ")
+        if author: 
+            title = input("Title: ")
+            if title: 
+                publisher = input("Publisher: ")
+                if publisher:
+                    try:
+                        year = int(input("Year: "))
+                        if year:
+                            break
+                    except ValueError:
+                        print('Year has to be an integer. Try again.')
+    payload = {
+        'author': author,
+        'title': title,
+        'publisher': publisher,
+        'year': year
+    }
+
+    if author and title and publisher and (year >= 0):
+        resp = requests.post(f'{URL_API}/books', json=payload)
+        response_treatment(resp)
+       
+def update_book():
+    book_uuid = input("What's the book UUID? ").strip()
+    while True:
+        print('\nWrite the NEW book informations:\n') 
+        author = input("Author: ")
+        if author: 
+            title = input("Title: ")
+            if title: 
+                publisher = input("Publisher: ")
+                if publisher:
+                    try:
+                        year = int(input("Year: "))
+                        if year:
+                            break
+                    except ValueError:
+                        print('Year has to be an integer. Try again.')      
+          
+    payload = {
+            'author': author,
+            'title': title,
+            'publisher': publisher,
+            'year': year
+        }
+    
+    resp = requests.post(f'{URL_API}/books', json=payload)
+    response_treatment(resp)
+    
 def menu():
     while True:
         print('\n==== BOOK API CLIENT ====')
         print('1. List books')
         print('2. Get book by UUID')
+        print('3. Insert a book')
+        print('4. Update a book')
         print('0. Exit')
         
         option = input('Choose the option: ').strip()
@@ -46,6 +101,10 @@ def menu():
                 list_books()
             case '2':
                 get_book()
+            case '3':
+                insert_book()
+            case '4':
+                update_book()
 
 if __name__=='__main__':
     print(books_db)

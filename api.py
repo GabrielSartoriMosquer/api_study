@@ -28,17 +28,70 @@ class Book(BaseModel):
     publisher: str
     year: int
     
+class BookPostPut(BaseModel):
+    author: str
+    title: str
+    publisher: str
+    year: int
+    
 # GET - list all books 
-@app.get(path='/books', response_model=list[Book])
+@app.get(
+    path='/books', 
+    response_model=list[Book]
+    )
 async def list_books() -> list[Book]:
     return [Book(**data) for data in books_db.values()]
 
-@app.get(path='/books/{book_uuid}', 
-         response_model=Book, 
-         responses={404: {'description':'book not found'}})
+# GET - get a specific book 
+@app.get(
+    path='/books/{book_uuid}', 
+    response_model=Book, 
+    responses={404: {'description':'book not found'}}
+    )
 async def get_book(book_uuid: UUID) -> Book:  
     for book in books_db.values():
         if book['uuid'] == book_uuid:
             return Book(**book) # type: ignore
     raise HTTPException(status_code=404, detail='book not found')
-        
+    
+# POST - book insertion
+@app.post(
+    path='/books', 
+    response_model=Book
+    )
+async def insert_book(book: BookPostPut) -> Book:
+    new_uuid = uuid4()
+    new_id = max(books_db.keys()) + 1 if books_db else 1
+    
+    new_book = Book(
+        uuid = new_uuid,
+        author = book.author,
+        title = book.title,
+        publisher = book.publisher,
+        year = book.year
+    )
+    
+    books_db[new_id] = new_book.model_dump()
+    
+    return new_book
+
+# PUT - book update
+@app.put(
+    path='/books/{book_uuid}',
+    response_model=Book,
+    responses={404: {'description':'book not found'}}
+    )
+async def update_book(book_uuid: UUID, updated_book: BookPostPut) -> Book:
+    for ix, book in books_db.items():
+            if book['uuid'] == book_uuid:
+                books_db[ix] = dict(
+                    uuid = book_uuid,
+                    author = updated_book.author,
+                    title = updated_book.title,
+                    publisher = updated_book.publisher,
+                    year = updated_book.year
+                )
+                return Book(**books_db[ix])
+    
+    raise HTTPException(status_code=404, detail='book not found')
+                
