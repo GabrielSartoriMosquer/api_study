@@ -1,4 +1,5 @@
-﻿from uuid import UUID, uuid4
+﻿from typing import List, Optional
+from uuid import UUID, uuid4
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
 
@@ -34,12 +35,18 @@ class BookPostPut(BaseModel):
     publisher: str
     year: int
     
+class BookPatch(BaseModel):
+    author: Optional[str] = None
+    title: Optional[str] = None
+    publisher: Optional[str] = None
+    year: Optional[str] = None
+    
 # GET - list all books 
 @app.get(
     path='/books', 
-    response_model=list[Book]
+    response_model=List[Book]
     )
-async def list_books() -> list[Book]:
+async def list_books() -> List[Book]:
     return [Book(**data) for data in books_db.values()]
 
 # GET - get a specific book 
@@ -56,7 +63,7 @@ async def get_book(book_uuid: UUID) -> Book:
     
 # POST - book insertion
 @app.post(
-    path='/books', 
+    path='/books/add', 
     response_model=Book
     )
 async def insert_book(book: BookPostPut) -> Book:
@@ -77,7 +84,7 @@ async def insert_book(book: BookPostPut) -> Book:
 
 # PUT - book update
 @app.put(
-    path='/books/{book_uuid}',
+    path='/books/update/{book_uuid}',
     response_model=Book,
     responses={404: {'description':'book not found'}}
     )
@@ -94,4 +101,18 @@ async def update_book(book_uuid: UUID, updated_book: BookPostPut) -> Book:
                 return Book(**books_db[ix])
     
     raise HTTPException(status_code=404, detail='book not found')
-                
+
+# PATCH - partial book update    
+@app.patch(
+    path='/books/update/{book_uuid}',
+    response_model=Book,
+    responses={404: {'description':'book not found'}}
+)    
+async def update_book_part(book_uuid: UUID, updated_book: BookPatch) -> Book:
+    for ix, book in books_db.items():
+        if book['uuid'] == book_uuid:
+            for key, value in updated_book.model_dump(exclude_defaults=True).items():
+                book[key] = value
+            
+            return Book(**books_db[ix])
+    raise HTTPException(status_code=404, detail='book not found')
